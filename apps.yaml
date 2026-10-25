@@ -102,7 +102,7 @@ apps:
 
   - name: "pixel-camera"
     display_name: "Camera"
-    package: "com.google.android.GoogleCameraEng"
+    package: "com.google.android.GoogleCamera"
     source: "pixel-camera"
     download:
       provider: "apkmirror"
