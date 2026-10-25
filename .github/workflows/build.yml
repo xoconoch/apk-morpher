@@ -58,61 +58,52 @@ jobs:
       - name: Install Dependencies
         run: pip install -r requirements.txt
 
-      - name: Ensure Keystore Exists
+      - name: Load Signing Keystore
         env:
           SIGNING_KEYSTORE_BASE64: ${{ secrets.SIGNING_KEYSTORE_BASE64 }}
           SIGNING_KEY_PASS: ${{ secrets.SIGNING_KEY_PASS }}
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
         run: |
           mkdir -p keystore
-          if [ -n "$SIGNING_KEYSTORE_BASE64" ]; then
-            if echo "$SIGNING_KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > keystore/release.jks 2>/dev/null && [ -s keystore/release.jks ]; then
-              echo "[OK] Keystore restored from secret"
-            else
-              echo "[WARN] SIGNING_KEYSTORE_BASE64 secret was invalid base64 or empty."
-              rm -f keystore/release.jks
-            fi
+
+          if [ -z "$SIGNING_KEYSTORE_BASE64" ] || [ -z "$SIGNING_KEY_PASS" ]; then
+            echo "::error::Missing required signing secrets!"
+            echo ""
+            echo "╔════════════════════════════════════════════════════════════════════════╗"
+            echo "║  ❌ SIGNING KEYSTORE SECRETS MISSING                                  ║"
+            echo "║                                                                        ║"
+            echo "║  To sign and update APKs, set the following GitHub Secrets:            ║"
+            echo "║  (Settings -> Secrets and variables -> Actions)                        ║"
+            echo "║                                                                        ║"
+            echo "║  1. SIGNING_KEYSTORE_BASE64                                            ║"
+            echo "║     Generate a keystore locally and convert to base64:                 ║"
+            echo "║       keytool -genkeypair -v -keystore release.jks -alias apk-morpher  ║"
+            echo "║         -keyalg RSA -keysize 4096 -validity 10000                      ║"
+            echo "║       base64 -w0 release.jks                                           ║"
+            echo "║                                                                        ║"
+            echo "║  2. SIGNING_KEY_PASS                                                   ║"
+            echo "║     The password chosen when creating the keystore.                    ║"
+            echo "║                                                                        ║"
+            echo "║  3. SIGNING_KEY_ALIAS                                                  ║"
+            echo "║     The alias used (e.g. 'apk-morpher').                               ║"
+            echo "╚════════════════════════════════════════════════════════════════════════╝"
+            echo ""
+            exit 1
           fi
 
-          if [ -f keystore/release.jks ]; then
-            echo "[OK] Keystore found"
-          else
-            echo "[INFO] No keystore found — generating a new one..."
-            PASS=$(openssl rand -base64 24 | tr -d '/+=' | head -c 32)
-            keytool -genkeypair -v \
-              -keystore keystore/release.jks \
-              -alias apk-morpher \
-              -keyalg RSA -keysize 4096 -validity 10000 \
-              -storepass "$PASS" -keypass "$PASS" \
-              -dname "CN=APK-Morpher, OU=Self-Hosted, O=Personal, C=US"
-            echo "╔══════════════════════════════════════════════════════════════╗"
-            echo "║  ⚠️  NEW KEYSTORE GENERATED                                 ║"
-            echo "║                                                            ║"
-            echo "║  Save these as GitHub Secrets to persist across runs:       ║"
-            echo "║                                                            ║"
-            echo "║  1. SIGNING_KEY_PASS:                                      ║"
-            echo "║     $PASS"
-            echo "║                                                            ║"
-            echo "║  2. SIGNING_KEY_ALIAS:                                     ║"
-            echo "║     apk-morpher                                            ║"
-            echo "║                                                            ║"
-            echo "║  3. SIGNING_KEYSTORE_BASE64 (copy the block below):        ║"
-            echo "╚══════════════════════════════════════════════════════════════╝"
-            echo "--- BEGIN SIGNING_KEYSTORE_BASE64 ---"
-            base64 -w0 keystore/release.jks
-            echo ""
-            echo "--- END SIGNING_KEYSTORE_BASE64 ---"
-            echo ""
-            # Export for this run
-            echo "SIGNING_KEY_PASS=$PASS" >> $GITHUB_ENV
-            echo "SIGNING_KEY_ALIAS=apk-morpher" >> $GITHUB_ENV
-            # Also try to set the secret automatically if permissions allow
-            echo "$PASS" > /tmp/keypass.txt
-            base64 -w0 keystore/release.jks > /tmp/ks64.txt
-            gh secret set SIGNING_KEYSTORE_BASE64 < /tmp/ks64.txt 2>/dev/null || echo "[WARN] Could not auto-set SIGNING_KEYSTORE_BASE64 secret (set it manually)"
-            gh secret set SIGNING_KEY_PASS < /tmp/keypass.txt 2>/dev/null || echo "[WARN] Could not auto-set SIGNING_KEY_PASS secret (set it manually)"
-            rm -f /tmp/keypass.txt /tmp/ks64.txt
+          # Decode and validate base64
+          echo "$SIGNING_KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > keystore/release.jks 2>/dev/null || true
+
+          if [ ! -s keystore/release.jks ]; then
+            echo "::error::SIGNING_KEYSTORE_BASE64 is not a valid base64-encoded file!"
+            echo "Make sure you copied the output of 'base64 -w0 release.jks' without formatting alterations."
+            rm -f keystore/release.jks
+            exit 1
           fi
+
+          echo "SIGNING_KEY_PASS=$SIGNING_KEY_PASS" >> $GITHUB_ENV
+          echo "SIGNING_KEY_ALIAS=${SIGNING_KEY_ALIAS:-apk-morpher}" >> $GITHUB_ENV
+          echo "[OK] Keystore restored and validated successfully."
 
       - name: Run Incremental Update Check
         id: check

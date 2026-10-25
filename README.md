@@ -26,15 +26,24 @@ Go to **Settings** > **Secrets and variables** > **Actions**.
 #### Mandatory (Signing Key)
 Android requires consistent APK signatures for in-place app updates.
 
-On your **first build**, if no keystore exists, the workflow generates one and outputs the values in the `Prepare Build Plan` run log. Copy and save them as repository secrets:
+Generate your signing key once locally and save it as repository secrets:
 
-| Secret | Description | Example / Command |
+```bash
+# 1. Generate keystore
+keytool -genkeypair -v -keystore release.jks -alias apk-morpher \
+  -keyalg RSA -keysize 4096 -validity 10000
+
+# 2. Get the base64 string
+base64 -w0 release.jks
+```
+
+Add these secrets under **Settings** > **Secrets and variables** > **Actions**:
+
+| Secret | Description | Value |
 |---|---|---|
-| `SIGNING_KEYSTORE_BASE64` | Base64-encoded keystore (`release.jks`) | `base64 -w0 keystore/release.jks` |
-| `SIGNING_KEY_PASS` | Keystore & key password | 32-character string printed in the workflow log |
-| `SIGNING_KEY_ALIAS` | Key alias in keystore | `apk-morpher` |
-
-> **Note:** If your Actions permissions allow it, the workflow attempts to save `SIGNING_KEYSTORE_BASE64` and `SIGNING_KEY_PASS` automatically using GitHub CLI during the first run.
+| `SIGNING_KEYSTORE_BASE64` | Base64-encoded keystore | Output of `base64 -w0 release.jks` |
+| `SIGNING_KEY_PASS` | Password used during generation | Keystore password |
+| `SIGNING_KEY_ALIAS` | Key alias | `apk-morpher` |
 
 #### Optional Secrets
 | Secret | Description |
