@@ -105,11 +105,14 @@ def run_build(app_name: str, source: str, arch: str = "arm64-v8a") -> str | None
     logging.info(f"Using CLI: {cli.name}")
     logging.info(f"Using patches: {[p.name for p in patches]}")
 
-    # Get package name from config
-    package_name = app_cfg.package if app_cfg else None
+    # Get package name for upstream version check (use download package if specified, else app package)
+    dl_pkg = (app_cfg.download or {}).get("package") if app_cfg else None
+    package_name = dl_pkg or (app_cfg.package if app_cfg else None)
 
     # Get supported versions from CLI
     supported_versions = utils.get_supported_versions(package_name, str(cli), patches) if package_name else []
+    if not supported_versions and dl_pkg and dl_pkg != app_cfg.package:
+        supported_versions = utils.get_supported_versions(app_cfg.package, str(cli), patches)
     if not supported_versions:
         supported_versions = [None]
         logging.warning("No supported versions found, will attempt to fetch latest.")

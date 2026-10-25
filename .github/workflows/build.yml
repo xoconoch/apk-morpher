@@ -191,16 +191,28 @@ jobs:
           for apk in *.apk; do
             [ -e "$apk" ] || continue
             # Extract version from filename pattern: {app_name}-{arch}-{source}-v{version}.apk
-            # or fallback to regex match
             ver=$(echo "$apk" | sed -E 's/.*-v([0-9][^/]*)\.apk$/\1/')
             [ "$ver" = "$apk" ] && ver=""
+            
+            # Detect actual package ID inside the built APK
+            actual_pkg=$(python3 -c "
+import sys
+try:
+    from builder import utils
+    info = utils.get_apk_manifest_info('$apk')
+    print(info.get('package', ''))
+except Exception:
+    pass
+" 2>/dev/null || true)
+
             cat > "build_records/${APP_NAME}-${ARCH}.json" <<EOF
           {
             "app_name": "$APP_NAME",
             "source": "$SOURCE",
             "arch": "$ARCH",
             "apk": "$apk",
-            "version": "$ver"
+            "version": "$ver",
+            "package": "$actual_pkg"
           }
           EOF
           done
@@ -303,6 +315,9 @@ jobs:
                           if m:
                               ver = m.group(1)
                       entries[key]["built_version"] = ver
+                      pkg = rec.get("package", "").strip()
+                      if pkg:
+                          entries[key]["package"] = pkg
               except Exception as e:
                   print(f"Error processing {rec_file}: {e}")
 
