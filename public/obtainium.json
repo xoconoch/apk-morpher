@@ -1,0 +1,36 @@
+{
+  "apps": [
+    {
+      "id": "com.google.android.youtube",
+      "url": "https://xoconoch.github.io/apk-morpher/downloads.html",
+      "author": "xoconoch",
+      "name": "YouTube",
+      "preferredApkIndex": 0,
+      "additionalSettings": "{\"apkFilterRegEx\":\"youtube-arm64-v8a-.*-v.*\\\\.apk$\",\"versionExtractionRegEx\":\"youtube-arm64-v8a-.*-v([^/]+)\\\\.apk$\",\"matchGroupToUse\":\"1\"}"
+    },
+    {
+      "id": "com.google.android.apps.youtube.music",
+      "url": "https://xoconoch.github.io/apk-morpher/downloads.html",
+      "author": "xoconoch",
+      "name": "YouTube Music",
+      "preferredApkIndex": 0,
+      "additionalSettings": "{\"apkFilterRegEx\":\"youtube-music-arm64-v8a-.*-v.*\\\\.apk$\",\"versionExtractionRegEx\":\"youtube-music-arm64-v8a-.*-v([^/]+)\\\\.apk$\",\"matchGroupToUse\":\"1\"}"
+    },
+    {
+      "id": "com.reddit.frontpage",
+      "url": "https://xoconoch.github.io/apk-morpher/downloads.html",
+      "author": "xoconoch",
+      "name": "Reddit",
+      "preferredApkIndex": 0,
+      "additionalSettings": "{\"apkFilterRegEx\":\"reddit-arm64-v8a-.*-v.*\\\\.apk$\",\"versionExtractionRegEx\":\"reddit-arm64-v8a-.*-v([^/]+)\\\\.apk$\",\"matchGroupToUse\":\"1\"}"
+    },
+    {
+      "id": "com.google.android.apps.maps",
+      "url": "https://xoconoch.github.io/apk-morpher/downloads.html",
+      "author": "xoconoch",
+      "name": "Google Maps (Ungoogled)",
+      "preferredApkIndex": 0,
+      "additionalSettings": "{\"apkFilterRegEx\":\"ungoogled-maps-arm64-v8a-.*-v.*\\\\.apk$\",\"versionExtractionRegEx\":\"ungoogled-maps-arm64-v8a-.*-v([^/]+)\\\\.apk$\",\"matchGroupToUse\":\"1\"}"
+    }
+  ]
+}

@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>APK-Morpher — Self-Hosted Patched APKs</title>
+  <meta name="description" content="Self-hosted, auto-built patched Android APKs with Obtainium integration.">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0a0a0f;
+      --surface: #12121a;
+      --surface-hover: #1a1a28;
+      --border: #2a2a3a;
+      --text: #e4e4ed;
+      --text-dim: #8888a0;
+      --accent: #7c6aef;
+      --accent-hover: #9584ff;
+      --green: #34d399;
+      --green-hover: #4aeab0;
+      --radius: 12px;
+      --font: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    }
+
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 2rem 1.5rem;
+    }
+
+    /* Header */
+    .hero {
+      text-align: center;
+      padding: 3rem 0 2rem;
+    }
+    .hero h1 {
+      font-size: 2.2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, var(--accent), var(--green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+    .hero p {
+      color: var(--text-dim);
+      font-size: 1.05rem;
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .hero-actions {
+      margin-top: 1.5rem;
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.55rem 1.1rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-decoration: none;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .btn-primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn-primary:hover { background: var(--accent-hover); transform: translateY(-1px); }
+    .btn-outline {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-download {
+      background: var(--green);
+      color: #0a0a0f;
+    }
+    .btn-download:hover { background: var(--green-hover); transform: translateY(-1px); }
+    .btn-obtainium {
+      background: transparent;
+      color: var(--accent);
+      border: 1px solid var(--accent);
+    }
+    .btn-obtainium:hover { background: var(--accent); color: #fff; }
+
+    /* Grid */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    /* Cards */
+    .app-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      transition: all 0.25s ease;
+    }
+    .app-card:hover {
+      border-color: var(--accent);
+      background: var(--surface-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(124, 106, 239, 0.08);
+    }
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .app-name { font-size: 1.05rem; font-weight: 600; }
+    .app-version {
+      font-size: 0.78rem;
+      color: var(--green);
+      font-weight: 500;
+      background: rgba(52, 211, 153, 0.1);
+      padding: 0.15rem 0.5rem;
+      border-radius: 20px;
+    }
+    .app-meta {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 0.5rem;
+    }
+    .tag {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background: rgba(255,255,255,0.06);
+      color: var(--text-dim);
+    }
+    .tag-source { color: var(--accent); background: rgba(124, 106, 239, 0.1); }
+    .app-package {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-bottom: 0.75rem;
+      font-family: 'SF Mono', Monaco, Consolas, monospace;
+    }
+    .app-actions {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Footer */
+    .footer {
+      text-align: center;
+      padding: 3rem 0 2rem;
+      color: var(--text-dim);
+      font-size: 0.8rem;
+    }
+    .footer a { color: var(--accent); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
+
+    .count-badge {
+      display: inline-block;
+      background: rgba(124, 106, 239, 0.15);
+      color: var(--accent);
+      font-weight: 600;
+      padding: 0.2rem 0.6rem;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      margin-top: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="hero">
+      <h1>APK-Morpher</h1>
+      <p>Self-hosted, auto-built patched Android APKs — signed with your own key, updated automatically.</p>
+      <span class="count-badge">4 apps available</span>
+      <div class="hero-actions">
+        <a href="https://github.com/xoconoch/apk-morpher/releases/latest" class="btn btn-primary">
+          GitHub Releases
+        </a>
+        <a href="https://raw.githubusercontent.com/xoconoch/apk-morpher/main/public/obtainium.json" class="btn btn-outline">
+          Import All → Obtainium
+        </a>
+      </div>
+    </div>
+
+    <div class="grid">
+      
+      <div class="app-card">
+        <div class="app-header">
+          <h3 class="app-name">Reddit</h3>
+          <span class="app-version">v2026.24.0</span>
+        </div>
+        <div class="app-meta">
+          <span class="tag">arm64-v8a</span>
+          <span class="tag tag-source">morphe</span>
+        </div>
+        <p class="app-package">com.reddit.frontpage</p>
+        <div class="app-actions">
+          <a href="https://github.com/xoconoch/apk-morpher/releases/latest/download/reddit-arm64-v8a-morphe-v2026.24.0.apk" class="btn btn-download">Download APK</a>
+          <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522com.reddit.frontpage%2522%252C%2522url%2522%253A%2522https%253A%2F%2Fxoconoch.github.io%2Fapk-morpher%2Fdownloads.html%2522%252C%2522author%2522%253A%2522xoconoch%2522%252C%2522name%2522%253A%2522Reddit%2522%252C%2522preferredApkIndex%2522%253A0%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522reddit-arm64-v8a-.%252A-v.%252A%255C%255C%255C%255C.apk%2524%255C%2522%252C%255C%2522versionExtractionRegEx%255C%2522%253A%255C%2522reddit-arm64-v8a-.%252A-v%2528%255B%255E%2F%255D%252B%2529%255C%255C%255C%255C.apk%2524%255C%2522%252C%255C%2522matchGroupToUse%255C%2522%253A%255C%25221%255C%2522%257D%2522%257D" class="btn btn-obtainium" title="Add to Obtainium">+ Obtainium</a>
+        </div>
+      </div>
+      <div class="app-card">
+        <div class="app-header">
+          <h3 class="app-name">Google Maps (Ungoogled)</h3>
+          <span class="app-version">v26.36.04.973607363</span>
+        </div>
+        <div class="app-meta">
+          <span class="tag">arm64-v8a</span>
+          <span class="tag tag-source">bearinmindcat</span>
+        </div>
+        <p class="app-package">com.google.android.apps.maps</p>
+        <div class="app-actions">
+          <a href="https://github.com/xoconoch/apk-morpher/releases/latest/download/ungoogled-maps-arm64-v8a-bearinmindcat-v26.36.04.973607363.apk" class="btn btn-download">Download APK</a>
+          <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522com.google.android.apps.maps%2522%252C%2522url%2522%253A%2522https%253A%2F%2Fxoconoch.github.io%2Fapk-morpher%2Fdownloads.html%2522%252C%2522author%2522%253A%2522xoconoch%2522%252C%2522name%2522%253A%2522Google%2520Maps%2520%2528Ungoogled%2529%2522%252C%2522preferredApkIndex%2522%253A0%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522ungoogled-maps-arm64-v8a-.%252A-v.%252A%255C%255C%255C%255C.apk%2524%255C%2522%252C%255C%2522versionExtractionRegEx%255C%2522%253A%255C%2522ungoogled-maps-arm64-v8a-.%252A-v%2528%255B%255E%2F%255D%252B%2529%255C%255C%255C%255C.apk%2524%255C%2522%252C%255C%2522matchGroupToUse%255C%2522%253A%255C%25221%255C%2522%257D%2522%257D" class="btn btn-obtainium" title="Add to Obtainium">+ Obtainium</a>
+        </div>
+      </div>
+      <div class="app-card">
+        <div class="app-header">
+          <h3 class="app-name">YouTube</h3>
+          <span class="app-version">v21.20.405</span>
+        </div>
+        <div class="app-meta">
+          <span class="tag">arm64-v8a</span>
+          <span class="tag tag-source">morphe</span>
+        </div>
+        <p class="app-package">com.google.android.youtube</p>
+        <div class="app-actions">
+          <a href="https://github.com/xoconoch/apk-morpher/releases/latest/download/youtube-arm64-v8a-morphe-v21.20.405.apk" class="btn btn-download">Download APK</a>
+          <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522com.google.android.youtube%2522%252C%2522url%2522%253A%2522https%253A%2F%2Fxoconoch.github.io%2Fapk-morpher%2Fdownloads.html%2522%252C%2522author%2522%253A%2522xoconoch%2522%252C%2522name%2522%253A%2522YouTube%2522%252C%2522preferredApkIndex%2522%253A0%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522youtube-arm64-v8a-.%252A-v.%252A%255C%255C%255C%255C.apk%2524%255C%2522%252C%255C%2522versionExtractionRegEx%255C%2522%253A%255C%2522youtube-arm64-v8a-.%252A-v%2528%255B%255E%2F%255D%252B%2529%255C%255C%255C%255C.apk%2524%255C%2522%252C%255C%2522matchGroupToUse%255C%2522%253A%255C%25221%255C%2522%257D%2522%257D" class="btn btn-obtainium" title="Add to Obtainium">+ Obtainium</a>
+        </div>
+      </div>
+      <div class="app-card">
+        <div class="app-header">
+          <h3 class="app-name">YouTube Music</h3>
+          <span class="app-version">v9.20.53</span>
+        </div>
+        <div class="app-meta">
+          <span class="tag">arm64-v8a</span>
+          <span class="tag tag-source">morphe</span>
+        </div>
+        <p class="app-package">com.google.android.apps.youtube.music</p>
+        <div class="app-actions">
+          <a href="https://github.com/xoconoch/apk-morpher/releases/latest/download/youtube-music-arm64-v8a-morphe-v9.20.53.apk" class="btn btn-download">Download APK</a>
+          <a href="https://apps.obtainium.imranr.dev/redirect?r=obtainium%3A%2F%2Fapp%2F%257B%2522id%2522%253A%2522com.google.android.apps.youtube.music%2522%252C%2522url%2522%253A%2522https%253A%2F%2Fxoconoch.github.io%2Fapk-morpher%2Fdownloads.html%2522%252C%2522author%2522%253A%2522xoconoch%2522%252C%2522name%2522%253A%2522YouTube%2520Music%2522%252C%2522preferredApkIndex%2522%253A0%252C%2522additionalSettings%2522%253A%2522%257B%255C%2522apkFilterRegEx%255C%2522%253A%255C%2522youtube-music-arm64-v8a-.%252A-v.%252A%255C%255C%255C%255C.apk%2524%255C%2522%252C%255C%2522versionExtractionRegEx%255C%2522%253A%255C%2522youtube-music-arm64-v8a-.%252A-v%2528%255B%255E%2F%255D%252B%2529%255C%255C%255C%255C.apk%2524%255C%2522%252C%255C%2522matchGroupToUse%255C%2522%253A%255C%25221%255C%2522%257D%2522%257D" class="btn btn-obtainium" title="Add to Obtainium">+ Obtainium</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>
+        Built with <a href="https://github.com/xoconoch/apk-morpher">APK-Morpher</a> ·
+        Powered by GitHub Actions · Auto-updated via Obtainium
+      </p>
+    </div>
+  </div>
+</body>
+</html>
