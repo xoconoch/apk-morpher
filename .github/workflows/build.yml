@@ -79,23 +79,23 @@ jobs:
               -keyalg RSA -keysize 4096 -validity 10000 \
               -storepass "$PASS" -keypass "$PASS" \
               -dname "CN=APK-Morpher, OU=Self-Hosted, O=Personal, C=US"
-            echo ""
             echo "╔══════════════════════════════════════════════════════════════╗"
             echo "║  ⚠️  NEW KEYSTORE GENERATED                                 ║"
             echo "║                                                            ║"
             echo "║  Save these as GitHub Secrets to persist across runs:       ║"
             echo "║                                                            ║"
-            echo "║  1. SIGNING_KEYSTORE_BASE64:                               ║"
-            echo "║     base64 -w0 keystore/release.jks                        ║"
-            echo "║                                                            ║"
-            echo "║  2. SIGNING_KEY_PASS:                                      ║"
+            echo "║  1. SIGNING_KEY_PASS:                                      ║"
             echo "║     $PASS"
             echo "║                                                            ║"
-            echo "║  3. SIGNING_KEY_ALIAS: apk-morpher                         ║"
+            echo "║  2. SIGNING_KEY_ALIAS:                                     ║"
+            echo "║     apk-morpher                                            ║"
             echo "║                                                            ║"
-            echo "║  Without these secrets, a NEW key is generated each run    ║"
-            echo "║  and you cannot update apps (signature mismatch).          ║"
+            echo "║  3. SIGNING_KEYSTORE_BASE64 (copy the block below):        ║"
             echo "╚══════════════════════════════════════════════════════════════╝"
+            echo "--- BEGIN SIGNING_KEYSTORE_BASE64 ---"
+            base64 -w0 keystore/release.jks
+            echo ""
+            echo "--- END SIGNING_KEYSTORE_BASE64 ---"
             echo ""
             # Export for this run
             echo "SIGNING_KEY_PASS=$PASS" >> $GITHUB_ENV
