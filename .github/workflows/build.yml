@@ -190,13 +190,17 @@ jobs:
           mkdir -p build_records
           for apk in *.apk; do
             [ -e "$apk" ] || continue
-            # Create a simple build record
+            # Extract version from filename pattern: {app_name}-{arch}-{source}-v{version}.apk
+            # or fallback to regex match
+            ver=$(echo "$apk" | sed -E 's/.*-v([0-9][^/]*)\.apk$/\1/')
+            [ "$ver" = "$apk" ] && ver=""
             cat > "build_records/${APP_NAME}-${ARCH}.json" <<EOF
           {
             "app_name": "$APP_NAME",
             "source": "$SOURCE",
             "arch": "$ARCH",
-            "apk": "$apk"
+            "apk": "$apk",
+            "version": "$ver"
           }
           EOF
           done
@@ -279,20 +283,42 @@ jobs:
 
           # Update manifest with actual built APK filenames
           python3 - <<'PYEOF'
-          import json, glob, os
+          import json, glob, os, re
           manifest = {}
           if os.path.exists("manifest.json"):
               manifest = json.loads(open("manifest.json").read())
           entries = manifest.get("entries", {})
-          for rec_file in glob.glob("./all-records/*//*.json"):
+
+          # Look for build records in any subdirectory
+          for rec_file in glob.glob("./all-records/**/*.json", recursive=True):
               try:
                   rec = json.loads(open(rec_file).read())
                   key = f"{rec['app_name']}-{rec['arch']}-{rec['source']}"
                   if key in entries:
-                      entries[key]["apk"] = rec["apk"]
-                      entries[key]["built_version"] = rec.get("version", "")
-              except Exception:
-                  pass
+                      apk = rec.get("apk", "")
+                      entries[key]["apk"] = apk
+                      ver = rec.get("version", "")
+                      if not ver and apk:
+                          m = re.search(r"-v([0-9][\w.+]*)\.apk$", apk)
+                          if m:
+                              ver = m.group(1)
+                      entries[key]["built_version"] = ver
+              except Exception as e:
+                  print(f"Error processing {rec_file}: {e}")
+
+          # Also scan release-apks/ directly as a guarantee
+          for apk_path in glob.glob("./release-apks/*.apk"):
+              apk_name = os.path.basename(apk_path)
+              # e.g., youtube-arm64-v8a-morphe-v19.43.41.apk
+              for key, entry in entries.items():
+                  prefix = f"{entry.get('app_name')}-{entry.get('arch')}-{entry.get('source')}"
+                  if apk_name.startswith(prefix):
+                      entry["apk"] = apk_name
+                      if not entry.get("built_version"):
+                          m = re.search(r"-v([0-9][\w.+]*)\.apk$", apk_name)
+                          if m:
+                              entry["built_version"] = m.group(1)
+
           manifest["entries"] = entries
           open("manifest.json", "w").write(json.dumps(manifest, indent=2))
           PYEOF

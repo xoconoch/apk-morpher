@@ -130,8 +130,14 @@ def generate_obtainium_json(manifest: dict, repo_slug: str) -> dict:
     apps = []
     for key, entry in entries.items():
         apk = (entry.get("apk") or "").strip()
-        if not apk or not entry.get("built_version"):
+        if not apk:
             continue
+        if not entry.get("built_version"):
+            m = re.search(r"-v([0-9][\w.+]*)\.apk$", apk)
+            if m:
+                entry["built_version"] = m.group(1)
+            else:
+                entry["built_version"] = "latest"
         try:
             app_obj = build_obtainium_app(entry, pages_url, author)
             apps.append(app_obj)
@@ -154,8 +160,11 @@ def generate_index_html(manifest: dict, obtainium_bundle: dict, repo_slug: str) 
     for key in sorted(entries):
         e = entries[key]
         apk = (e.get("apk") or "").strip()
-        if not apk or not e.get("built_version"):
+        if not apk:
             continue
+        if not e.get("built_version"):
+            m = re.search(r"-v([0-9][\w.+]*)\.apk$", apk)
+            e["built_version"] = m.group(1) if m else "latest"
         # Find matching obtainium app for deep link
         deep_link = ""
         for obt_app in obtainium_bundle.get("apps", []):
