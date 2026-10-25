@@ -37,14 +37,10 @@ sources:
     cli: "MorpheApp/morphe-cli"
     patches: "bearinmindcat/morphe-patches"
 
-  # ─── Example: community patch sources ───
-  # hushgram:
-  #   cli: "MorpheApp/morphe-cli"
-  #   patches: "SysAdminDoc/Hushgram"
-  #
-  # piko:
-  #   cli: "MorpheApp/morphe-cli"
-  #   patches: "crimera/piko"
+  pixel-camera:
+    cli: "MorpheApp/morphe-cli"
+    patches: "Akshayykadam/Pixel-Camera"
+
 
 
 # ── Apps to Build ────────────────────────────────────────────────────────
@@ -103,6 +99,15 @@ apps:
       org: "google-inc"
       repo_name: "google-maps"
       type: "BUNDLE"
+
+  - name: "pixel-camera"
+    display_name: "Camera"
+    package: "com.google.android.GoogleCameraEng"
+    source: "pixel-camera"
+    download:
+      provider: "apkmirror"
+      org: "google-inc"
+      repo_name: "camera"
 
   # ─── More examples (uncomment to enable) ──────────────────────────────
   #
