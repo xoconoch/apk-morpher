@@ -66,10 +66,16 @@ jobs:
         run: |
           mkdir -p keystore
           if [ -n "$SIGNING_KEYSTORE_BASE64" ]; then
-            echo "$SIGNING_KEYSTORE_BASE64" | base64 -d > keystore/release.jks
-            echo "[OK] Keystore restored from secret"
-          elif [ -f keystore/release.jks ]; then
-            echo "[OK] Keystore found in repo"
+            if echo "$SIGNING_KEYSTORE_BASE64" | tr -d '\r\n ' | base64 -d > keystore/release.jks 2>/dev/null && [ -s keystore/release.jks ]; then
+              echo "[OK] Keystore restored from secret"
+            else
+              echo "[WARN] SIGNING_KEYSTORE_BASE64 secret was invalid base64 or empty."
+              rm -f keystore/release.jks
+            fi
+          fi
+
+          if [ -f keystore/release.jks ]; then
+            echo "[OK] Keystore found"
           else
             echo "[INFO] No keystore found — generating a new one..."
             PASS=$(openssl rand -base64 24 | tr -d '/+=' | head -c 32)
