@@ -1,111 +1,93 @@
-# 🚀 APK-Morpher
+# apk-morpher
 
-**Self-hosted ReVanced/Morphe auto-build pipeline with an Obtainium-ready repository.**
-
-Fork this repository, edit a single configuration file (`apps.yaml`), and get automated builds of patched Android APKs signed with your own keystore and served directly through GitHub Pages.
+Automated Morphe & ReVanced patch, sign, and release pipeline for personal Obtainium repositories.
 
 ---
 
-## ✨ Features
-
-- **Single Configuration File**: Manage apps, architectures, and patch sources in [`apps.yaml`](file:///home/xoconoch/Projects/coding/Mophe-AutoBuilds/apps.yaml).
-- **Automated Keystore Management**: Auto-generates a personal Android signing key on first CI run and stores it securely in GitHub Secrets.
-- **Incremental CI Builds**: Automatically checks upstream tags and releases; only rebuilds apps with new updates to save GitHub Actions quota.
-- **Obtainium Compatible**: Generates both an HTML download page (`downloads.html`) and an `obtainium.json` export for instant bulk import.
-- **Zero-Node Static Catalog**: GitHub Pages site generated via a lightweight Python script without requiring Node, Vite, or external dependencies.
-- **Multiple Upstream Scrapers**: Supports APKMirror, APKPure, Uptodown, APKCombo, Aptoide, GitHub Releases, and direct URLs.
-
----
-
-## 🛠️ Quick Start
+## Quick Setup
 
 ### 1. Use this Template
-Click **"Use this template"** > **"Create a new repository"** on GitHub.
+Click **Use this template** > **Create a new repository**.
 
-### 2. Configure Repository Secrets & Variables
-Go to **Settings** > **Actions** > **General** > **Workflow permissions** and choose:
-- ✅ **Read and write permissions**
-- ✅ **Allow GitHub Actions to create and approve pull requests**
+### 2. Configure GitHub Settings
 
-Under **Settings** > **Pages**:
-- Source: **Deploy from a branch** or **GitHub Actions** (the workflow deploys via GitHub Actions artifacts).
+1. **Workflow Permissions**:  
+   Go to **Settings** > **Actions** > **General** > **Workflow permissions**:
+   - Select **Read and write permissions**
+   - Check **Allow GitHub Actions to create and approve pull requests**
+2. **GitHub Pages**:  
+   Go to **Settings** > **Pages**:
+   - Build and deployment source: **GitHub Actions**
 
-*(Optional)* For automated APK downloading from APKMirror/Google Play if rate-limited:
-- `PLAYSTORE_EMAIL` / `PLAYSTORE_PASSWORD` (if utilizing Play Store downloader features).
+### 3. Repository Secrets
 
-### 3. Customize [`apps.yaml`](file:///home/xoconoch/Projects/coding/Mophe-AutoBuilds/apps.yaml)
-Add or remove apps you want built:
+Go to **Settings** > **Secrets and variables** > **Actions**.
+
+#### Mandatory (Signing Key)
+Android requires consistent APK signatures for in-place app updates.
+
+On your **first build**, if no keystore exists, the workflow generates one and outputs the values in the `Prepare Build Plan` run log. Copy and save them as repository secrets:
+
+| Secret | Description | Example / Command |
+|---|---|---|
+| `SIGNING_KEYSTORE_BASE64` | Base64-encoded keystore (`release.jks`) | `base64 -w0 keystore/release.jks` |
+| `SIGNING_KEY_PASS` | Keystore & key password | 32-character string printed in the workflow log |
+| `SIGNING_KEY_ALIAS` | Key alias in keystore | `apk-morpher` |
+
+> **Note:** If your Actions permissions allow it, the workflow attempts to save `SIGNING_KEYSTORE_BASE64` and `SIGNING_KEY_PASS` automatically using GitHub CLI during the first run.
+
+#### Optional Secrets
+| Secret | Description |
+|---|---|
+| `PLAYSTORE_EMAIL` / `PLAYSTORE_PASSWORD` | Google account credentials (only if using the `playstore` download provider). |
+
+---
+
+## Adding or Editing Apps
+
+Edit [`apps.yaml`](apps.yaml) in the root of the repository:
 
 ```yaml
 sources:
   morphe:
-    cli_repo: "MorpheApp/morphe-cli"
-    patches_repo: "MorpheApp/morphe-patches"
-    type: "revanced"
+    cli: "MorpheApp/morphe-cli"
+    patches: "MorpheApp/morphe-patches"
 
 apps:
-  youtube:
-    name: "YouTube"
+  - name: "youtube"
+    display_name: "YouTube"
     package: "com.google.android.youtube"
     source: "morphe"
-    dl_source: "apkmirror"
-    arch: ["arm64-v8a"]
-    include_patches: []
-    exclude_patches: []
+    download:
+      provider: "apkmirror"
+      org: "google-inc"
+      repo_name: "youtube"
+      type: "BUNDLE"
 ```
 
-### 4. Trigger Your First Build
-- Go to the **Actions** tab.
-- Select **Build & Release**.
-- Click **Run workflow** (optionally tick `force_full_rebuild`).
+Pushing changes to `apps.yaml` or running the workflow manually triggers a build. Builds also run automatically on the daily schedule specified in `apps.yaml`.
 
 ---
 
-## 📱 Connecting to Obtainium
+## Connect to Obtainium
 
-Once GitHub Pages finishes deployment:
+Once the action finishes and GitHub Pages is deployed:
 
-### Method A: Single-App Tracking (HTML Source)
-1. In Obtainium, tap **Add App**.
-2. Enter your Pages URL:
-   ```text
-   https://<username>.github.io/<repo-name>/downloads.html
-   ```
-3. Set source to **HTML** with filter string matching your target app (e.g., `youtube`).
+- **Bulk Import (All Apps)**:  
+  In Obtainium: **Settings** > **Import/Export** > **Import from URL**:
+  ```text
+  https://<username>.github.io/<repo-name>/obtainium.json
+  ```
 
-### Method B: Bulk Import
-1. In Obtainium, go to **Settings** > **Import/Export**.
-2. Import from URL:
-   ```text
-   https://<username>.github.io/<repo-name>/obtainium.json
-   ```
+- **Single App (HTML Track)**:  
+  In Obtainium: **Add App** > URL:
+  ```text
+  https://<username>.github.io/<repo-name>/downloads.html
+  ```
+  Set source type to **HTML** and filter by app name.
 
 ---
 
-## 📁 Repository Structure
+## License
 
-```text
-├── apps.yaml                 # ⚙️ Primary user config (apps, sources, builds)
-├── .github/workflows/
-│   └── build.yml             # 🔄 Single unified Actions workflow
-├── builder/                  # 🐍 Core build & scraper engine
-│   ├── __init__.py           # Session & GitHub API client
-│   ├── __main__.py           # Build orchestration CLI
-│   ├── config.py             # apps.yaml parser & validator
-│   ├── updater.py            # Incremental build / tag checker
-│   ├── site_generator.py     # Static site generator for Pages
-│   └── [sources].py          # Scrapers (apkmirror, uptodown, etc.)
-└── requirements.txt          # Python dependencies
-```
-
----
-
-## 🔒 Security & Privacy
-
-- Patched APKs are signed with a unique key generated in your repository's workflow and stored in your private GitHub Actions secrets (`KEYSTORE_BASE64`).
-- No pre-compiled binaries are bundled; all patching runs transparently in standard Ubuntu runners via GitHub Actions.
-
----
-
-## 📄 License
-This project is open-source under the MIT License.
+GPL-3.0
