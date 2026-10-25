@@ -33,6 +33,10 @@ sources:
     cli: "MorpheApp/morphe-cli"
     patches: "MorpheApp/morphe-patches"
 
+  bearinmindcat:
+    cli: "MorpheApp/morphe-cli"
+    patches: "bearinmindcat/morphe-patches"
+
   # ─── Example: community patch sources ───
   # hushgram:
   #   cli: "MorpheApp/morphe-cli"
@@ -89,6 +93,16 @@ apps:
       provider: "apkmirror"
       org: "reddit-inc"
       repo_name: "reddit"
+
+  - name: "ungoogled-maps"
+    display_name: "Google Maps (Ungoogled)"
+    package: "com.google.android.apps.maps"
+    source: "bearinmindcat"
+    download:
+      provider: "apkmirror"
+      org: "google-inc"
+      repo_name: "google-maps"
+      type: "BUNDLE"
 
   # ─── More examples (uncomment to enable) ──────────────────────────────
   #
