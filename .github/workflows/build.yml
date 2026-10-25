@@ -196,14 +196,14 @@ jobs:
             
             # Detect actual package ID inside the built APK
             actual_pkg=$(python3 -c "
-import sys
-try:
-    from builder import utils
-    info = utils.get_apk_manifest_info('$apk')
-    print(info.get('package', ''))
-except Exception:
-    pass
-" 2>/dev/null || true)
+          import sys
+          try:
+              from builder import utils
+              info = utils.get_apk_manifest_info('$apk')
+              print(info.get('package', ''))
+          except Exception:
+              pass
+          " 2>/dev/null || true)
 
             cat > "build_records/${APP_NAME}-${ARCH}.json" <<EOF
           {
