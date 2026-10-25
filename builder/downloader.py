@@ -144,12 +144,36 @@ def download_platform(
     override_version: str = None,
 ) -> tuple[Path | None, str | None, list[str]]:
     try:
+        config = None
         config_path = Path("apps") / platform / f"{app_name}.json"
-        if not config_path.exists():
-            logging.debug(f"Config file not found for {app_name} on {platform}, skipping.")
+        if config_path.exists():
+            with config_path.open() as json_file:
+                config = json.load(json_file)
+        else:
+            try:
+                from builder.config import load_config
+                cfg = load_config()
+                app_entry = cfg.get_app(app_name)
+                if app_entry:
+                    dl = app_entry.download or {}
+                    provider = dl.get("provider", "apkmirror")
+                    if provider == platform or platform in ("apkmirror", "apkpure", "uptodown", "apkcombo", "direct", "github", "playstore"):
+                        config = {
+                            "org": dl.get("org", ""),
+                            "name": dl.get("repo_name", app_entry.name),
+                            "type": dl.get("type", "APK"),
+                            "arch": dl.get("arch", arch or app_entry.arch),
+                            "dpi": dl.get("dpi", "nodpi"),
+                            "package": app_entry.package,
+                            "version": dl.get("version", ""),
+                            "url": dl.get("url", ""),
+                        }
+            except Exception as e:
+                logging.debug(f"Failed to load fallback config for {app_name}: {e}")
+
+        if not config:
+            logging.debug(f"Config not found for {app_name} on {platform}, skipping.")
             return None, None, []
-        with config_path.open() as json_file:
-            config = json.load(json_file)
 
         # Override arch if specified
         if arch:
