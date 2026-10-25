@@ -1,0 +1,37 @@
+__pycache__/
+NUL
+*.apk
+*.jar
+*.mpp
+morphe-data/
+local_logs/
+*.log
+# PlaystoreDownloader temp split folders
+playstore_splits_*/
+.env
+venv/
+.venv/
+
+# Root-only local build / planning artifacts
+/build_matrix.json
+/carry_over.json
+/new_manifest.json
+/patch_changelogs.json
+/release_notes.md
+/release_assets.txt
+/current_assets.txt
+/keep_apks.txt
+# Build and release artifacts
+/build_records/
+/build_report.json
+bin/
+scratch/
+SHA256SUMS.txt
+patches-*.cdx.json
+release-receipt-*.json
+
+# AI & Agent configurations
+AGENTS.md
+GEMINI.md
+.agent/
+

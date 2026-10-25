@@ -1,0 +1,122 @@
+# ╔══════════════════════════════════════════════════════════════════════════╗
+# ║                       APK-MORPHER CONFIGURATION                        ║
+# ║                                                                        ║
+# ║  This is the ONLY file you need to edit.                               ║
+# ║  Add, remove, or customize your patched apps below.                    ║
+# ╚══════════════════════════════════════════════════════════════════════════╝
+
+# ── Global Settings ──────────────────────────────────────────────────────
+settings:
+  # Target CPU architecture for all builds
+  arch: "arm64-v8a"
+
+  # Cron schedule for automatic builds (default: daily at 04:00 UTC)
+  schedule_cron: "0 4 * * *"
+
+  # Number of old workflow runs to keep
+  retention_runs: 5
+
+
+# ── Patch Sources ────────────────────────────────────────────────────────
+# Maps a shorthand name to the GitHub repos hosting the CLI and patches.
+# The "cli" repo must publish a .jar release asset (Morphe or ReVanced).
+# The "patches" repo must publish .mpp (Morphe) or .rvp (ReVanced) assets.
+#
+# Format:
+#   <name>:
+#     cli:     "<owner>/<repo>"           # CLI tool repo
+#     patches: "<owner>/<repo>"           # Patch bundle repo
+#     tag:     "latest"                   # Release tag (optional, default: latest)
+#
+sources:
+  morphe:
+    cli: "MorpheApp/morphe-cli"
+    patches: "MorpheApp/morphe-patches"
+
+  # ─── Example: community patch sources ───
+  # hushgram:
+  #   cli: "MorpheApp/morphe-cli"
+  #   patches: "SysAdminDoc/Hushgram"
+  #
+  # piko:
+  #   cli: "MorpheApp/morphe-cli"
+  #   patches: "crimera/piko"
+
+
+# ── Apps to Build ────────────────────────────────────────────────────────
+# Each entry tells the pipeline:
+#   1. What app to patch  (name + package)
+#   2. Where to get it    (download provider)
+#   3. What patches       (source name from above)
+#   4. Optional tweaks    (include/exclude specific patches, pin version)
+#
+# Supported download providers:
+#   apkmirror   – Best for Google apps, uses web scraping
+#   apkpure     – Direct CDN downloads
+#   apkcombo    – Cloudflare R2 CDN, no CF challenges
+#   uptodown    – Good alternative scraper
+#   direct      – Direct URL to an APK file
+#   github      – Download from a GitHub release
+#
+apps:
+  - name: "youtube"
+    display_name: "YouTube"
+    package: "com.google.android.youtube"
+    source: "morphe"
+    download:
+      provider: "apkmirror"
+      org: "google-inc"
+      repo_name: "youtube"
+      type: "BUNDLE"
+      # dpi: "nodpi"
+      # version: ""              # Pin a specific version (empty = auto-detect)
+
+  - name: "youtube-music"
+    display_name: "YouTube Music"
+    package: "com.google.android.apps.youtube.music"
+    source: "morphe"
+    download:
+      provider: "apkmirror"
+      org: "google-inc"
+      repo_name: "youtube-music"
+      type: "BUNDLE"
+
+  - name: "reddit"
+    display_name: "Reddit"
+    package: "com.reddit.frontpage"
+    source: "morphe"
+    download:
+      provider: "apkmirror"
+      org: "reddit-inc"
+      repo_name: "reddit"
+
+  # ─── More examples (uncomment to enable) ──────────────────────────────
+  #
+  # - name: "instagram"
+  #   display_name: "Instagram"
+  #   package: "com.instagram.android"
+  #   source: "hushgram"
+  #   download:
+  #     provider: "apkmirror"
+  #     org: "instagram"
+  #     repo_name: "instagram-instagram"
+  #
+  # - name: "twitter"
+  #   display_name: "X (Twitter)"
+  #   package: "com.twitter.android"
+  #   source: "piko"
+  #   download:
+  #     provider: "apkmirror"
+  #     org: "x-corp"
+  #     repo_name: "twitter"
+  #   patches:
+  #     exclude:
+  #       - "Hide ads"
+  #
+  # - name: "custom-app"
+  #   display_name: "My Custom App"
+  #   package: "com.example.myapp"
+  #   source: "morphe"
+  #   download:
+  #     provider: "direct"
+  #     url: "https://example.com/app-latest.apk"

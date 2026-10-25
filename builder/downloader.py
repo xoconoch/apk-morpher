@@ -1,0 +1,360 @@
+import json
+import logging
+import time
+from pathlib import Path
+# Platform modules are imported for download_platform(), which resolves them
+# dynamically through globals()[platform] (# noqa: F401).
+from builder import (
+    utils,
+    apkpure,
+    apkcombo,
+    direct,
+    session,
+    uptodown,
+    aptoide,
+    apkmirror,
+    github,
+    playstore,
+)
+
+def download_resource(url: str, name: str = None) -> Path:
+    headers = {}
+    if "apkmirror.com" in url:
+        headers["Referer"] = "https://www.apkmirror.com/"
+    res = session.get(url, headers=headers, stream=True)
+    res.raise_for_status()
+    final_url = res.url
+
+    if not name:
+        name = utils.extract_filename(res, fallback_url=final_url)
+
+    filepath = Path(name)
+    total_size = int(res.headers.get('content-length', 0))
+    downloaded_size = 0
+
+    with filepath.open("wb") as file:
+        for chunk in res.iter_content(chunk_size=8192):
+            if chunk:
+                file.write(chunk)
+                downloaded_size += len(chunk)
+
+    logging.info(
+        f"URL: {final_url} [{downloaded_size}/{total_size}] -> \"{filepath}\" [1]"
+    )
+
+    return filepath
+
+def download_required(source: str) -> tuple[list[Path], str]:
+    source_path = Path("sources") / f"{source}.json"
+    with source_path.open() as json_file:
+        repos_info = json.load(json_file)
+
+    # Handle bundle format
+    if isinstance(repos_info, dict) and "bundle_url" in repos_info:
+        return download_from_bundle(repos_info)
+    
+    # Handle old list format
+    name = repos_info[0]["name"]
+    downloaded_files = []
+
+    for repo_info in repos_info[1:]:
+        release = utils.detect_release(repo_info)
+        entry_name = (
+            repo_info.get("repo")
+            or repo_info.get("project")
+            or repo_info.get("name")
+            or ""
+        ).lower()
+
+        for asset in release["assets"]:
+            asset_name = asset["name"]
+            asset_url = asset["browser_download_url"]
+            if asset_name.endswith(".asc"):
+                continue
+
+            # Keep the existing Morphe-specific asset filtering. Piko NewX
+            # releases also carry metadata (e.g. patches-list.json); only its
+            # patch bundle / CLI jars should be downloaded.
+            if "morphe-patches" in entry_name or "morphe-cli" in entry_name or "piko-newx" in entry_name:
+                if asset_name.endswith(".mpp") or (
+                    asset_name.lower().endswith(".jar")
+                ):
+                    downloaded_files.append(download_resource(asset_url))
+            else:
+                downloaded_files.append(download_resource(asset_url))
+
+    return downloaded_files, name
+
+def download_from_bundle(bundle_info: dict) -> tuple[list[Path], str]:
+    """Download resources from a bundle URL"""
+    bundle_url = bundle_info["bundle_url"]
+    name = bundle_info.get("name", "bundle-patches")
+    
+    logging.info(f"Downloading bundle from {bundle_url}")
+    
+    # Download the bundle JSON
+    with session.get(bundle_url) as res:
+        res.raise_for_status()
+        bundle_data = res.json()
+    
+    downloaded_files = []
+    
+    # Check API version and structure
+    if "patches" in bundle_data:
+        # API v4 format
+        patches = bundle_data.get("patches", [])
+        integrations = bundle_data.get("integrations", [])
+        
+        # Download patches (JAR files)
+        for patch in patches:
+            if "url" in patch:
+                filepath = download_resource(patch["url"])
+                downloaded_files.append(filepath)
+                logging.info(f"Downloaded patch: {patch.get('name', 'unknown')}")
+        
+        # Download integrations (APK files)
+        for integration in integrations:
+            if "url" in integration:
+                filepath = download_resource(integration["url"])
+                downloaded_files.append(filepath)
+                logging.info(f"Downloaded integration: {integration.get('name', 'unknown')}")
+    
+    # Also download CLI (still needed) - try ReVanced CLI first
+    try:
+        cli_release = utils.detect_github_release("revanced", "revanced-cli", "latest")
+        for asset in cli_release["assets"]:
+            if asset["name"].endswith(".asc"):
+                continue
+            if asset["name"].endswith(".jar") and "cli" in asset["name"].lower():
+                filepath = download_resource(asset["browser_download_url"])
+                downloaded_files.append(filepath)
+                logging.info("Downloaded ReVanced CLI")
+                break
+    except Exception as e:
+        logging.warning(f"Could not download ReVanced CLI: {e}")
+    
+    return downloaded_files, name
+
+def download_platform(
+    app_name: str,
+    platform: str,
+    cli: str,
+    patches: list[Path],
+    arch: str = None,
+    override_version: str = None,
+) -> tuple[Path | None, str | None, list[str]]:
+    try:
+        config_path = Path("apps") / platform / f"{app_name}.json"
+        if not config_path.exists():
+            logging.debug(f"Config file not found for {app_name} on {platform}, skipping.")
+            return None, None, []
+        with config_path.open() as json_file:
+            config = json.load(json_file)
+
+        # Override arch if specified
+        if arch:
+            config['arch'] = arch
+
+        platform_module = globals()[platform]
+
+        # Only try the explicitly requested version (or pinned version from config)
+        pinned = (config.get("version") or "").strip()
+        target_version = override_version or pinned
+
+        if not target_version:
+            # If __main__.py didn't pass a version (e.g. no versions found in CLI), fetch latest
+            target_version = platform_module.get_latest_version(app_name, config)
+            if not target_version:
+                return None, None, []
+
+        result = platform_module.get_download_link(target_version, app_name, config)
+        
+        # Fallback to universal if the requested arch wasn't found
+        if not result and arch and arch != "universal":
+            logging.info(f"Failed to find {arch} for {app_name} v{target_version} on {platform}, falling back to universal...")
+            config['arch'] = "universal"
+            result = platform_module.get_download_link(target_version, app_name, config)
+            config['arch'] = arch
+
+        if not result:
+            logging.debug(f"No download link found for {app_name} version {target_version} on {platform}")
+            return None, None, []
+
+        try:
+            # PlaystoreDownloader returns a local file path, not an HTTP URL.
+            result_path = Path(result)
+            if result_path.exists() and result_path.is_file():
+                logging.info(f"Using local file from {platform}: {result_path}")
+                filepath = result_path
+            else:
+                # All other sources return an HTTP URL — download it.
+                filepath = download_resource(result)
+
+            # Verify the downloaded APK version and package if it's an .apk file
+            if filepath.suffix == ".apk":
+                manifest_info = utils.get_apk_manifest_info(filepath)
+
+                # Check package name matches expectation
+                expected_pkg = config.get("package")
+                actual_pkg = manifest_info.get("package")
+                if expected_pkg and actual_pkg and actual_pkg != expected_pkg:
+                    logging.warning(
+                        f"Downloaded APK from {platform} has package '{actual_pkg}', "
+                        f"which does not match expected package '{expected_pkg}'. Rejecting."
+                    )
+                    filepath.unlink(missing_ok=True)
+                    return None, None, []
+
+                actual_vn = manifest_info.get("versionName")
+                if actual_vn and target_version:
+                    if not utils.is_version_compatible(actual_vn, target_version):
+                        logging.warning(
+                            f"Downloaded APK from {platform} has version '{actual_vn}', "
+                            f"which does not match target version '{target_version}'. Rejecting."
+                        )
+                        filepath.unlink(missing_ok=True)
+                        return None, None, []
+                    logging.info(
+                        f"Verified APK version from {platform}: '{actual_vn}' (target: '{target_version}')"
+                    )
+                return filepath, actual_vn or target_version, []
+
+            return filepath, target_version, []
+        except Exception as e:
+            logging.error(f"Download failed for {app_name} v{target_version} on {platform}: {e}")
+            return None, None, []
+
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        return None, None, []
+
+# ──────────────────────────────────────────────────────────────────────────
+# Per-platform download functions (used by __main__.py)
+# ──────────────────────────────────────────────────────────────────────────
+
+def download_playstore(
+    app_name: str,
+    cli: str,
+    patches: list[Path],
+    arch: str = None,
+    override_version: str = None,
+) -> tuple[Path | None, str | None, list[str]]:
+    """Primary source: Google Play Store via PlaystoreDownloader CLI."""
+    return download_platform(app_name, "playstore", cli, patches, arch, override_version)
+
+def download_direct(
+    app_name: str,
+    cli: str,
+    patches: list[Path],
+    arch: str = None,
+    override_version: str = None,
+) -> tuple[Path | None, str | None, list[str]]:
+    """Manual override: direct URL pinned in apps/direct/<app>.json. Wins when configured."""
+    return download_platform(app_name, "direct", cli, patches, arch, override_version)
+
+def download_apkmirror(
+    app_name: str,
+    cli: str,
+    patches: list[Path],
+    arch: str = None,
+    override_version: str = None,
+) -> tuple[Path | None, str | None, list[str]]:
+    return download_platform(app_name, "apkmirror", cli, patches, arch, override_version)
+
+def download_github(
+    app_name: str,
+    cli: str,
+    patches: list[Path],
+    arch: str = None,
+    override_version: str = None,
+) -> tuple[Path | None, str | None, list[str]]:
+    return download_platform(app_name, "github", cli, patches, arch, override_version)
+
+def download_apkpure(
+    app_name: str,
+    cli: str,
+    patches: list[Path],
+    arch: str = None,
+    override_version: str = None,
+) -> tuple[Path | None, str | None, list[str]]:
+    return download_platform(app_name, "apkpure", cli, patches, arch, override_version)
+
+def download_apkcombo(
+    app_name: str,
+    cli: str,
+    patches: list[Path],
+    arch: str = None,
+    override_version: str = None,
+) -> tuple[Path | None, str | None, list[str]]:
+    """Fallback source: APKCombo (Cloudflare R2 CDN, no CF challenges on downloads)."""
+    return download_platform(app_name, "apkcombo", cli, patches, arch, override_version)
+
+def download_aptoide(
+    app_name: str,
+    cli: str,
+    patches: list[Path],
+    arch: str = None,
+    override_version: str = None,
+) -> tuple[Path | None, str | None, list[str]]:
+    return download_platform(app_name, "aptoide", cli, patches, arch, override_version)
+
+def download_uptodown(
+    app_name: str,
+    cli: str,
+    patches: list[Path],
+    arch: str = None,
+    override_version: str = None,
+) -> tuple[Path | None, str | None, list[str]]:
+    return download_platform(app_name, "uptodown", cli, patches, arch, override_version)
+
+def download_apkeditor() -> Path:
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            release = utils.detect_github_release("REAndroid", "APKEditor", "latest")
+
+            for asset in release["assets"]:
+                if asset["name"].startswith("APKEditor") and asset["name"].endswith(".jar"):
+                    return download_resource(asset["browser_download_url"])
+
+            raise RuntimeError("APKEditor .jar file not found in the latest release")
+        except Exception as e:
+            if attempt == max_retries - 1:
+                raise RuntimeError(f"Failed to download APKEditor after {max_retries} attempts: {e}")
+            logging.warning(f"APKEditor download attempt {attempt + 1} failed: {e}. Retrying...")
+            time.sleep(2)  # Wait 2 seconds before retry
+
+_cached_morphe_patches: Path | None = None
+
+def download_global_morphe_patches() -> Path | None:
+    """Download and cache the official MorpheApp/morphe-patches MPP bundle for universal patches."""
+    global _cached_morphe_patches
+    if _cached_morphe_patches and _cached_morphe_patches.exists():
+        return _cached_morphe_patches
+
+    # Check local bin/ or /tmp first
+    for candidate in [Path("bin/morphe-patches.mpp"), Path("/tmp/morphe-patches.mpp")]:
+        if candidate.exists() and candidate.stat().st_size > 1000000:
+            _cached_morphe_patches = candidate
+            return candidate
+
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            release = utils.detect_github_release("MorpheApp", "morphe-patches", "latest")
+            for asset in release["assets"]:
+                asset_name = asset["name"]
+                if asset_name.endswith(".mpp"):
+                    dest = Path("bin") / "morphe-patches.mpp"
+                    dest.parent.mkdir(parents=True, exist_ok=True)
+                    downloaded = download_resource(asset["browser_download_url"], name=str(dest))
+                    _cached_morphe_patches = downloaded
+                    return downloaded
+            logging.warning("No .mpp asset found in MorpheApp/morphe-patches latest release")
+            return None
+        except Exception as e:
+            if attempt == max_retries - 1:
+                logging.warning(f"Could not download global morphe-patches bundle: {e}")
+                return None
+            time.sleep(2)
+    return None
