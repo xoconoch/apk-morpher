@@ -96,11 +96,11 @@ def generate_downloads_html(manifest: dict, repo_slug: str) -> str:
         '<html lang="en">',
         "<head>",
         '<meta charset="utf-8">',
-        "<title>APK-Morpher — Downloads</title>",
+        "<title>APK-Morpher downloads</title>",
         '<meta name="viewport" content="width=device-width, initial-scale=1">',
         "</head>",
         "<body>",
-        "<h1>APK-Morpher — APK Downloads</h1>",
+        "<h1>APK Downloads</h1>",
         "<p>Machine-readable catalog for update trackers. One link per published APK.</p>",
     ]
     for r in rows:
@@ -216,7 +216,7 @@ def generate_index_html(manifest: dict, obtainium_bundle: dict, repo_slug: str) 
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>APK-Morpher — Self-Hosted Patched APKs</title>
+  <title>APK-Morpher</title>
   <meta name="description" content="Self-hosted, auto-built patched Android APKs with Obtainium integration.">
   <style>
     *, *::before, *::after {{ box-sizing: border-box; margin: 0; padding: 0; }}
@@ -405,7 +405,6 @@ def generate_index_html(manifest: dict, obtainium_bundle: dict, repo_slug: str) 
   <div class="container">
     <div class="hero">
       <h1>APK-Morpher</h1>
-      <p>Self-hosted, auto-built patched Android APKs — signed with your own key, updated automatically.</p>
       <span class="count-badge">{len(built_apps)} apps available</span>
       <div class="hero-actions">
         <a href="https://github.com/{html.escape(repo_slug)}/releases/latest" class="btn btn-primary">

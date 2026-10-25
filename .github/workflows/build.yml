@@ -1,5 +1,5 @@
 # ╔══════════════════════════════════════════════════════════════════════════╗
-# ║  APK-MORPHER — Automated Patch, Sign & Release Pipeline                ║
+# ║  APK-MORPHER: Automated Patch, Sign & Release Pipeline                ║
 # ║                                                                        ║
 # ║  Triggered on schedule, manual dispatch, or when apps.yaml changes.    ║
 # ║  Reads apps.yaml, builds a matrix of apps, patches & signs each one,   ║
@@ -23,7 +23,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '0 4 * * *'   # Daily at 04:00 UTC — edit in apps.yaml settings
+    - cron: '0 4 * * *'   # Daily at 04:00 UTC
 
 permissions:
   contents: write
@@ -365,12 +365,12 @@ jobs:
               }
             done
             gh release edit latest \
-              --title "APK-Morpher — $(date +'%Y-%m-%d %H:%M')" \
-              --notes "Automated release — $(date +'%Y-%m-%d %H:%M UTC'). See the [catalog](https://${{ github.repository_owner }}.github.io/$(echo '${{ github.repository }}' | cut -d/ -f2)/) for details."
+              --title "APKs $(date +'%Y-%m-%d %H:%M')" \
+              --notes "Automated release $(date +'%Y-%m-%d %H:%M UTC'). See the [catalog](https://${{ github.repository_owner }}.github.io/$(echo '${{ github.repository }}' | cut -d/ -f2)/) for details."
           else
             gh release create latest \
-              --title "APK-Morpher — $(date +'%Y-%m-%d %H:%M')" \
-              --notes "Automated release — $(date +'%Y-%m-%d %H:%M UTC'). See the [catalog](https://${{ github.repository_owner }}.github.io/$(echo '${{ github.repository }}' | cut -d/ -f2)/) for details." \
+              --title "APKs $(date +'%Y-%m-%d %H:%M')" \
+              --notes "Automated release $(date +'%Y-%m-%d %H:%M UTC'). See the [catalog](https://${{ github.repository_owner }}.github.io/$(echo '${{ github.repository }}' | cut -d/ -f2)/) for details." \
               --latest \
               "${ASSETS[@]}"
           fi
