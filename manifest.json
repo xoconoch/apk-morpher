@@ -36,7 +36,7 @@
       "package": "org.ungoogled.android.apps.maps",
       "source": "bearinmindcat",
       "arch": "arm64-v8a",
-      "source_signature": "MorpheApp/morphe-cli@v1.19.1|bearinmindcat/morphe-patches@v2.6.0",
+      "source_signature": "MorpheApp/morphe-cli@v1.19.1|bearinmindcat/morphe-patches@v2.6.4",
       "apk": "ungoogled-maps-arm64-v8a-bearinmindcat-v26.36.04.973607363.apk",
       "built_version": "26.36.04.973607363"
     },
