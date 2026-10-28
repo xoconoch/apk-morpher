@@ -36,17 +36,17 @@
       "package": "org.ungoogled.android.apps.maps",
       "source": "bearinmindcat",
       "arch": "arm64-v8a",
-      "source_signature": "MorpheApp/morphe-cli@v1.19.1|bearinmindcat/morphe-patches@v2.6.4",
+      "source_signature": "MorpheApp/morphe-cli@v1.19.1|bearinmindcat/morphe-patches@v2.7.2",
       "apk": "ungoogled-maps-arm64-v8a-bearinmindcat-v26.36.04.973607363.apk",
       "built_version": "26.36.04.973607363"
     },
     "pixel-camera-arm64-v8a-pixel-camera": {
       "app_name": "pixel-camera",
       "display_name": "Camera",
-      "package": "com.google.android.GoogleCamera",
+      "package": "com.google.android.GoogleCamera.morphe",
       "source": "pixel-camera",
       "arch": "arm64-v8a",
-      "source_signature": "MorpheApp/morphe-cli@v1.19.1|Akshayykadam/Pixel-Camera@1.0.5",
+      "source_signature": "MorpheApp/morphe-cli@v1.19.1|Akshayykadam/Pixel-Camera@1.0.6",
       "apk": "pixel-camera-arm64-v8a-pixel-camera-v11.1.040.982810059.19.apk",
       "built_version": "11.1.040.982810059.19"
     }
