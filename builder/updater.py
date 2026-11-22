@@ -146,7 +146,13 @@ def main() -> int:
         new_entries[entry_key] = {
             "app_name": app.name,
             "display_name": app.display_name,
-            "package": app.package,
+            # `app.package` is the upstream package used for downloading, but
+            # patches may rename it in the built APK (e.g. Morphe's GmsCore
+            # support rewrites com.google.android.youtube to
+            # app.morphe.android.youtube). The manifest must keep advertising
+            # the package that is actually inside the published APK, otherwise
+            # Obtainium sees a package ID change between updates.
+            "package": old.get("package") or app.package,
             "source": app.source,
             "arch": app.arch,
             "source_signature": current_sig,

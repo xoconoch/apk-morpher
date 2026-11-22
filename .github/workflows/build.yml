@@ -296,6 +296,10 @@ jobs:
           # Update manifest with actual built APK filenames
           python3 - <<'PYEOF'
           import json, glob, os, re
+          try:
+              from builder import utils
+          except Exception:
+              utils = None
           manifest = {}
           if os.path.exists("manifest.json"):
               manifest = json.loads(open("manifest.json").read())
@@ -333,6 +337,15 @@ jobs:
                           m = re.search(r"-v([0-9][\w.+]*)\.apk$", apk_name)
                           if m:
                               entry["built_version"] = m.group(1)
+                      # Keep the manifest package in sync with the APK that is
+                      # actually published, even if the build record is missing.
+                      if utils:
+                          try:
+                              pkg = (utils.get_apk_manifest_info(apk_path) or {}).get("package", "").strip()
+                              if pkg:
+                                  entry["package"] = pkg
+                          except Exception as e:
+                              print(f"Could not read package from {apk_path}: {e}")
 
           manifest["entries"] = entries
           open("manifest.json", "w").write(json.dumps(manifest, indent=2))

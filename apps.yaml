@@ -50,6 +50,13 @@ sources:
 #   3. What patches       (source name from above)
 #   4. Optional tweaks    (include/exclude specific patches, pin version)
 #
+# NOTE: `package` is the UPSTREAM package used to find/download the original
+# APK (e.g. com.google.android.youtube). Patches may rename the package in the
+# patched APK (e.g. Morphe's GmsCore support produces
+# app.morphe.android.youtube so it can coexist with the official app). The
+# published/installed package is detected from the built APK automatically --
+# do not set it here.
+#
 # Supported download providers:
 #   apkmirror   – Best for Google apps, uses web scraping
 #   apkpure     – Direct CDN downloads
